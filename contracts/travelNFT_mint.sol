@@ -14,24 +14,24 @@ contract travelNFT_mint is ERC721 {
     mapping(address => uint8) private allowList;
 
     // Market
-    bool public saleIsActive;
+    bool public isSaleActive;
     uint256 private s_saledConuter;
     uint8 public constant PUCHASE_LIMIT = 3;
     uint256 public constant SALE_LIMIT = 1000; //temporally set
     uint256 private constant PRICE_PER_TICKET = 1000000; //temporally set
 
     // Metadata, Uri
-    bool public blindBoxOpen;
+    bool public isBlindboxOpen;
     string private ticketURI =
-        "https://ipfs.io/ipfs/QmVDnVNKfrWQvUwELCBSK4YjL2qHQ8uEniJhwwFJ8gc7bq/"; //blindTokenURI
+        "https://ipfs.io/ipfs/QmTupSXieyjY9Sc9zCf4v7gmAHtnCWXrfyrt8XqzWrJhVE/"; //blindTokenURI
 
     /* Functions */
     constructor() ERC721("Go Traveling", "Trav Ticket") {
         s_saledConuter = 1;
         deployer = payable(msg.sender);
-        saleIsActive = false;
+        isSaleActive = false;
         isAllowListActive = false;
-        blindBoxOpen = false;
+        isBlindboxOpen = false;
     }
 
     modifier onlyDeployer() {
@@ -51,7 +51,7 @@ contract travelNFT_mint is ERC721 {
     }
 
     function setSaleState(bool _newState) external onlyDeployer {
-        saleIsActive = _newState;
+        isSaleActive = _newState;
     }
 
     function setAllowList(address[] calldata addresses, uint8 numAllowedToMint)
@@ -63,31 +63,27 @@ contract travelNFT_mint is ERC721 {
         }
     }
 
-    function setIsBlindBoxOpen(bool _isBlindBoxOpen, string memory _ticketURI)
+    function setIsBlindboxOpen(bool _isBlindboxOpen, string memory _ticketURI)
         external
         onlyDeployer
     {
-        blindBoxOpen = _isBlindBoxOpen;
+        isBlindboxOpen = _isBlindboxOpen;
         ticketURI = _ticketURI;
-        // if (s_saledConuter > 1) {
-        //     for (uint256 i = 0; i < s_saledConuter; i++) {
-        //         tokenURI(i + 1);
-        //     }
-        // }
     }
 
-    function _baseURI() internal view override returns (string memory) {
+    function _baseURI() internal view virtual override returns (string memory) {
         return ticketURI;
     }
 
-    function tokenURI(uint256 tokenId) public view override returns (string memory) {
-        _requireMinted(tokenId);
-
+    function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
+        // _requireMinted(tokenId);
+        require(tokenId <= getTokenCounter(), "unminted ticketID");
         string memory baseURI = _baseURI();
-        return
-            blindBoxOpen
-                ? string(abi.encodePacked(baseURI, tokenId.toString(), ".json"))
-                : string(abi.encodePacked(baseURI));
+        if (isBlindboxOpen) {
+            return string(abi.encodePacked(baseURI, tokenId.toString(), ".json"));
+        } else {
+            return string(abi.encodePacked(baseURI));
+        }
     }
 
     /**
@@ -97,7 +93,7 @@ contract travelNFT_mint is ERC721 {
      */
     function mintTicket(uint8 numOfTokens) public payable returns (uint256) {
         require(s_saledConuter + numOfTokens < SALE_LIMIT, "Ticket sale limit reached");
-        require(saleIsActive || isAllowListActive, "Tickets are not allowed to sale");
+        require(isSaleActive || isAllowListActive, "Tickets are not allowed to sale");
 
         if (balanceOf(msg.sender) >= 1) {
             require(numOfTokens <= PUCHASE_LIMIT, "Exceeded max tickets purchase");
@@ -133,7 +129,7 @@ contract travelNFT_mint is ERC721 {
      */
     function devMint(uint256 numOfTokens) external onlyDeployer {
         require(s_saledConuter + numOfTokens < SALE_LIMIT, "Ticket sale limit reached");
-        require(saleIsActive || isAllowListActive, "Tickets are not allowed to sale");
+        require(isSaleActive || isAllowListActive, "Tickets are not allowed to sale");
 
         for (uint256 i = 0; i < numOfTokens; i++) {
             _safeMint(msg.sender, s_saledConuter + i);
