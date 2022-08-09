@@ -5,9 +5,7 @@ on testnet rinkeby: https://rinkeby.etherscan.io/address/0xf49a30a3205E9E1f1AC74
 
 ### \* wait to modify:
 
--   whitelist: merkle tree
-
-*   erc721A
+-   erc721A
 
 <br>
 
@@ -68,7 +66,8 @@ If not, can run
 
 ## Gas Improve
 
-### use merkle tree than array mapping
+-   use merkle tree than array mapping (3770017->3590968)
+-   import Ownable.sol (->3570274)
 
 ## Encounter Error
 

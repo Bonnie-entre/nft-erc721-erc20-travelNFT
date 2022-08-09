@@ -3,12 +3,10 @@ pragma solidity ^0.8.8;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract travelNFT_mint is ERC721 {
+contract travelNFT_mint is ERC721, Ownable {
     using Strings for uint256;
-
-    // Contract
-    address payable internal deployer;
 
     // Allowlist (whitelist)
     bytes32 public root;
@@ -29,44 +27,29 @@ contract travelNFT_mint is ERC721 {
     /* Functions */
     constructor() ERC721("Go Traveling", "Trav Ticket") {
         s_saledConuter = 1;
-        deployer = payable(msg.sender);
+        // deployer = payable(msg.sender);
         isSaleActive = false;
         isAllowListActive = false;
         isBlindboxOpen = false;
-    }
-
-    modifier onlyDeployer() {
-        require(msg.sender == deployer, "Only deployer");
-        _;
     }
 
     function isValid(bytes32[] memory proof, bytes32 leaf) public view returns (bool) {
         return MerkleProof.verify(proof, root, leaf);
     }
 
-    /**
-     * @dev transfer the ownership of the contract to null address
-     */
-    function dropDeployer() external onlyDeployer {
-        deployer = payable(address(0));
-    }
-
-    function setIsAllowListActive(bool _isAllowListActive) external onlyDeployer {
+    function setIsAllowListActive(bool _isAllowListActive) external onlyOwner {
         isAllowListActive = _isAllowListActive;
     }
 
-    function setSaleState(bool _newState) external onlyDeployer {
+    function setSaleState(bool _newState) external onlyOwner {
         isSaleActive = _newState;
     }
 
-    function setRoot(bytes32 _root) external onlyDeployer {
+    function setRoot(bytes32 _root) external onlyOwner {
         root = _root;
     }
 
-    function setIsBlindboxOpen(bool _isBlindboxOpen, string memory _ticketURI)
-        external
-        onlyDeployer
-    {
+    function setIsBlindboxOpen(bool _isBlindboxOpen, string memory _ticketURI) external onlyOwner {
         isBlindboxOpen = _isBlindboxOpen;
         ticketURI = _ticketURI;
     }
@@ -124,7 +107,7 @@ contract travelNFT_mint is ERC721 {
      * @dev deployer can mint specific ammount of nft token without paying
      * ps. or use mintAllowList directally
      */
-    function devMint(uint256 numOfTokens) external onlyDeployer {
+    function devMint(uint256 numOfTokens) external onlyOwner {
         require(s_saledConuter + numOfTokens < SALE_LIMIT, "Ticket sale limit reached");
         require(isSaleActive || isAllowListActive, "Tickets are not allowed to sale");
 
