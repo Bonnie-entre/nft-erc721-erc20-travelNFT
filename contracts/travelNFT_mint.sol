@@ -2,6 +2,7 @@
 pragma solidity ^0.8.8;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 contract travelNFT_mint is ERC721 {
     using Strings for uint256;
@@ -10,8 +11,8 @@ contract travelNFT_mint is ERC721 {
     address payable internal deployer;
 
     // Allowlist (whitelist)
-    bool public isAllowListActive;
-    mapping(address => uint8) private allowList;
+    bytes32 public root;
+    bool public isAllowListActive; // can make time lag with public sell and blindbox open timing
 
     // Market
     bool public isSaleActive;
@@ -39,6 +40,10 @@ contract travelNFT_mint is ERC721 {
         _;
     }
 
+    function isValid(bytes32[] memory proof, bytes32 leaf) public view returns (bool) {
+        return MerkleProof.verify(proof, root, leaf);
+    }
+
     /**
      * @dev transfer the ownership of the contract to null address
      */
@@ -54,13 +59,8 @@ contract travelNFT_mint is ERC721 {
         isSaleActive = _newState;
     }
 
-    function setAllowList(address[] calldata addresses, uint8 numAllowedToMint)
-        external
-        onlyDeployer
-    {
-        for (uint256 i = 0; i < addresses.length; i++) {
-            allowList[addresses[i]] = numAllowedToMint;
-        }
+    function setRoot(bytes32 _root) external onlyDeployer {
+        root = _root;
     }
 
     function setIsBlindboxOpen(bool _isBlindboxOpen, string memory _ticketURI)
@@ -112,15 +112,12 @@ contract travelNFT_mint is ERC721 {
     }
 
     // maybe creater(devMint) can use this function too
-    function mintAllowList(uint8 numOfTokens) public payable {
-        // maybe we could set whitelist allow earlier than public mint (&sale)
+    function mintAllowList(bytes32[] memory proof, uint8 numOfTokens) public payable {
+        require(isValid(proof, keccak256(abi.encodePacked(msg.sender))), "Not a part of Allowlist");
         require(isAllowListActive, "Allow list is not active");
-        // maybe we could modify this function to automatically mint their max number of tokens for minter
-        require(numOfTokens <= allowList[msg.sender], "Exceed max available to purchase");
 
         //maybe we could modify this function to make those allowlist minter mint with lower price
         mintTicket(numOfTokens);
-        allowList[msg.sender] -= numOfTokens;
     }
 
     /**
@@ -148,9 +145,5 @@ contract travelNFT_mint is ERC721 {
 
     function getMintRemaining() public view returns (uint256) {
         return SALE_LIMIT - s_saledConuter;
-    }
-
-    function getNumAvailableToMint(address _addr) public view returns (uint8) {
-        return allowList[_addr];
     }
 }

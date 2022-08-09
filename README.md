@@ -66,6 +66,10 @@ If not, can run
 
 <br><br>
 
+## Gas Improve
+
+### use merkle tree than array mapping
+
 ## Encounter Error
 
 ### Error: ENOENT: no such file or directory, open... artifacts/build-info ...

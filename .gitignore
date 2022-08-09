@@ -5,6 +5,10 @@ node_modules
 coverage/
 coverage.json
 deployments
+gas-report.txt
+
+#
+whitelist/whitelist.js
 
 # 
 .env
