@@ -23,8 +23,10 @@ contract NFT is ERC721A, Ownable {
 
     constructor() ERC721A("Travel seatBelt", "seatBelt") {}
 
-    function mint(uint256 quantity) public payable {
-        // _safeMint's second argument now takes in a quantity, not a tokenId.
+    function mintAllowList(bytes32[] memory proof, uint256 quantity) public payable {
+        require(isWhiteSaleActive, "Allowlist mint is not active");
+        require(isValid(proof, keccak256(abi.encodePacked(msg.sender))), "Not a part of Allowlist");
+
         uint256 numMinted = _numberMinted(msg.sender);
         require(quantity + numMinted <= MAX_MINTS, "Exceeded the personal limit");
         require(totalSupply() + quantity <= MAX_SUPPLY, "Not enough Seatbelts left");
@@ -43,17 +45,25 @@ contract NFT is ERC721A, Ownable {
         _safeMint(msg.sender, quantity);
     }
 
-    function mintAllowList(bytes32[] memory proof, uint256 quantity) public payable {
-        require(isWhiteSaleActive, "Allowlist mint is not active");
-        require(isValid(proof, keccak256(abi.encodePacked(msg.sender))), "Not a part of Allowlist");
-
-        mint(quantity);
-    }
-
     function mintPublic(uint256 quantity) public payable {
         require(isPublicSaleActive, "Public mint is not active");
 
-        mint(quantity);
+        uint256 numMinted = _numberMinted(msg.sender);
+        require(quantity + numMinted <= MAX_MINTS, "Exceeded the personal limit");
+        require(totalSupply() + quantity <= MAX_SUPPLY, "Not enough Seatbelts left");
+        if(numMinted>=1){
+            require(msg.value >= (mintPrice * quantity), "Not enough ether sent");
+        }
+        else{
+            if(quantity==5){
+                require(msg.value >= (mintPrice * 3), "Not enough ether sent");
+            }
+            else{
+                require(msg.value >= (mintPrice * (quantity-1)), "Not enough ether sent");
+            }
+            
+        }
+        _safeMint(msg.sender, quantity);
     }
 
     function isValid(bytes32[] memory proof, bytes32 leaf) public view returns (bool) {
