@@ -3,9 +3,8 @@
 ![Screenshot](screenshot.png)
 on testnet rinkeby: https://rinkeby.etherscan.io/address/0xf49a30a3205E9E1f1AC748481f26BAeD344Fb3A9
 
-### \* wait to modify:
-
--   erc721A
+<br>
+*once install packga "hardhat-shorthand", we can replace "hardhat" in cml by "hh"*
 
 <br>
 
@@ -54,6 +53,13 @@ If not, can run
 
 <br>
 
+### Test
+At the same time, can get the gas report
+```
+yarn hardhat test
+```
+<br>
+
 ### Image & .json
 
 -   IPFS
@@ -66,8 +72,18 @@ If not, can run
 
 ## Gas Improve
 
--   use merkle tree than array mapping (3770017->3590968)
--   import Ownable.sol (->3570274)
+Sructure
+- The more often use function, put more ahead 
+-  Replace if-else by ?:, and put easier fire situation into if statement
+
+Function using
+- Not override tokenURI(), by get rid of ".json" for each filename
+-   Use merkle tree, not array mapping 
+-   Don't use totalSupply() from ERC721Enumerable.sol, which needs 2 override function, and cost 400000 gas more.
+-   Import Ownable.sol, not write on my own
+-   Less math calculate
+
+<br><br>
 
 ## Encounter Error
 
