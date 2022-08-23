@@ -27,21 +27,20 @@ contract NFT is ERC721A, Ownable {
         require(isWhiteSaleActive, "Allowlist mint is not active");
         require(isValid(proof, keccak256(abi.encodePacked(msg.sender))), "Not a part of Allowlist");
 
-        uint256 numMinted = _numberMinted(msg.sender);
-        require(quantity + numMinted <= MAX_MINTS, "Exceeded the personal limit");
+        uint256 numMinted =  _numberMinted(msg.sender);
+        require( quantity + numMinted <= MAX_MINTS, "Exceeded the personal limit");
         require(totalSupply() + quantity <= MAX_SUPPLY, "Not enough Seatbelts left");
-
-        if(numMinted==0){
-            if(quantity==5){
-                require(msg.value >= 0.015 ether, "Not enough ether sent");
-            }
-            else{
-                require(msg.value >= (mintPrice * (quantity-1)), "Not enough ether sent");
-            }
+        
+        if(quantity==5){
+            require(msg.value >= 0.015 ether, "Not enough ether sent");
+        }
+        else if(numMinted==0){
+            require(msg.value >= (mintPrice * (quantity-1)), "Not enough ether sent");
         }
         else{
-            require(msg.value >= (mintPrice * quantity), "Not enough ether sent");            
+            require(msg.value >= (mintPrice * quantity), "Not enough ether sent");
         }
+        
         _safeMint(msg.sender, quantity);
     }
 
@@ -51,18 +50,17 @@ contract NFT is ERC721A, Ownable {
         uint256 numMinted = _numberMinted(msg.sender);
         require(quantity + numMinted <= MAX_MINTS, "Exceeded the personal limit");
         require(totalSupply() + quantity <= MAX_SUPPLY, "Not enough Seatbelts left");
-        
-        if(numMinted==0){
-            if(quantity==5){
-                require(msg.value >= 0.015 ether, "Not enough ether sent");
-            }
-            else{
-                require(msg.value >= (mintPrice * (quantity-1)), "Not enough ether sent");
-            }
+
+        if(quantity==5){
+            require(msg.value >= 0.015 ether, "Not enough ether sent");
+        }
+        else if(numMinted==0){
+            require(msg.value >= (mintPrice * (quantity-1)), "Not enough ether sent");
         }
         else{
-            require(msg.value >= (mintPrice * quantity), "Not enough ether sent");            
+            require(msg.value >= (mintPrice * quantity), "Not enough ether sent");
         }
+
         _safeMint(msg.sender, quantity);
     }
 
