@@ -15,7 +15,7 @@ async function buildMerkle() {
 /* Check */
 async function checkleafProof(check_address) {
     const leaf = await keccak256(check_address)
-    const proof = await tree.getProof(leaf).map((x) => buf2hex(x.data))
+    const proof = await tree.getProof(leaf).map((x) => ("'" + buf2hex(x.data)+ "'"))
     return proof
 }
 
@@ -24,7 +24,7 @@ module.exports = { checkleafProof, buildMerkle }
 const getProof_Leaf = async (addr) => {
     console.log(`Leaf(keccak256): ${buf2hex(keccak256(addr))}`)
     const proof = await checkleafProof(addr)
-    console.log(proof)
+    console.log(`Proof of leaf:\n${proof}`)
 }
 
 const getRoot = async () => {
@@ -32,5 +32,9 @@ const getRoot = async () => {
     console.log(`Root: ${root}`)
 }
 
+
 getRoot()
-getProof_Leaf("0x5B38Da6a701c568545dCfcB03FcB875f56beddC4")
+getProof_Leaf("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")
+
+
+// not leaf test addr = "0x4B20993Bc481177ec7E8f571ceCaE8A9e22C02db"

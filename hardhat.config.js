@@ -4,11 +4,12 @@ require("hardhat-deploy")
 require("solidity-coverage")
 require("hardhat-gas-reporter")
 require("hardhat-contract-sizer")
-require("dotenv").config()
+require("dotenv").config({ path: "./.env" })
 
 /** @type import('hardhat/config').HardhatUserConfig */
 
-// const COINMARKETCAP_API_KEY = process.env.COINMARKETCAP_API_KEY || ""
+const COINMARKETCAP_API_KEY =
+    process.env.COINMARKETCAP_API_KEY || "ef431901-daea-4a30-b015-a2eef376625c"
 const RINKEBY_RPC_URL = process.env.RINKEBY_RPC_URL //|| "https://eth-rinkeby.alchemyapi.io/v2/your-api-key"
 const PRIVATE_KEY = process.env.PRIVATE_KEY //|| ""
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY //|| ""
@@ -47,7 +48,7 @@ module.exports = {
         currency: "USD",
         outputFile: "gas-report.txt",
         noColors: true,
-        // coinmarketcap: COINMARKETCAP_API_KEY,
+        coinmarketcap: COINMARKETCAP_API_KEY,
     },
     namedAccounts: {
         deployer: {
@@ -58,4 +59,7 @@ module.exports = {
     mocha: {
         timeout: 200000, // 200 seconds max for running tests
     },
+    // paths: {
+    //     sources: "./contracts",
+    // },
 }

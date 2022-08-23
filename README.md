@@ -3,9 +3,8 @@
 ![Screenshot](screenshot.png)
 on testnet rinkeby: https://rinkeby.etherscan.io/address/0xf49a30a3205E9E1f1AC748481f26BAeD344Fb3A9
 
-### \* wait to modify:
-
--   erc721A
+<br>
+*once install packga "hardhat-shorthand", we can replace "hardhat" in cml by "hh"*
 
 <br>
 
@@ -68,6 +67,9 @@ If not, can run
 
 -   use merkle tree than array mapping (3770017->3590968)
 -   import Ownable.sol (->3570274)
+-   Don't use totalSupply() from ERC721Enumerable.sol, which needs 2 override function, and cost 400000 gas more.
+-   Less math calculate (->3568966)
+-   replace if-else by ?: (->3568102)
 
 ## Encounter Error
 

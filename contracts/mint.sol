@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract travelNFT_mint is ERC721, Ownable {
+contract mint is ERC721, Ownable {
     using Strings for uint256;
 
     // Allowlist (whitelist)
@@ -14,7 +14,7 @@ contract travelNFT_mint is ERC721, Ownable {
 
     // Market
     bool public isSaleActive;
-    uint256 private s_saledConuter;
+    uint256 internal s_saledConuter;
     uint8 public constant PUCHASE_LIMIT = 3;
     uint256 public constant SALE_LIMIT = 1000; //temporally set
     uint256 private constant PRICE_PER_TICKET = 1000000; //temporally set
@@ -27,7 +27,6 @@ contract travelNFT_mint is ERC721, Ownable {
     /* Functions */
     constructor() ERC721("Go Traveling", "Trav Ticket") {
         s_saledConuter = 1;
-        // deployer = payable(msg.sender);
         isSaleActive = false;
         isAllowListActive = false;
         isBlindboxOpen = false;
@@ -60,13 +59,12 @@ contract travelNFT_mint is ERC721, Ownable {
 
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
         // _requireMinted(tokenId);
-        require(tokenId <= getTokenCounter(), "unminted ticketID");
+        require(tokenId < s_saledConuter, "unminted ticketID");
         string memory baseURI = _baseURI();
-        if (isBlindboxOpen) {
-            return string(abi.encodePacked(baseURI, tokenId.toString(), ".json"));
-        } else {
-            return string(abi.encodePacked(baseURI));
-        }
+        return
+            isBlindboxOpen
+                ? string(abi.encodePacked(baseURI, tokenId.toString(), ".json"))
+                : string(abi.encodePacked(baseURI));
     }
 
     /**
