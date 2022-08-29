@@ -191,4 +191,8 @@ contract NFT is ERC721A, Ownable {
         mintPrice = _mintPrice;
     }
 
+    function getNumOfBurned(address ownerAddr) public view returns(uint256){
+        return _numberBurned(ownerAddr);
+    }
+
 }
