@@ -56,15 +56,15 @@ const { BigNumber } = require("ethers");
         expect(await base.connect(owner).totalSupply()).to.eq(5);
       })
 
-      it("check balance & mint with enough ethers, mint 5 NFT", async function () {
-        await base.setIsPublicSaleActive(true);
-        await base.connect(addr1).mintPublic(1);
-        // expect( await base.balanceOf(addr1.adddress) ).to.eq(1);
-        expect(await base.connect(owner).totalSupply()).to.eq(1);
-        await base.connect(addr1).mintPublic(1, { value: price });
-        // expect( await base.balanceOf(addr1.adddress) ).to.eq(2);
-        expect(await base.connect(owner).totalSupply()).to.eq(2);
-      })
+      // it("check balance & mint twice with enough ethers, mint 3 NFT", async function () {
+      //   await base.setIsPublicSaleActive(true);
+      //   await base.connect(addr1).mintPublic(1);
+      //   // expect( await base.balanceOf(addr1.adddress) ).to.eq(1);
+      //   expect(await base.connect(owner).totalSupply()).to.eq(1);
+      //   await base.connect(addr1).mintPublic(1, { value: price });
+      //   // expect( await base.balanceOf(addr1.adddress) ).to.eq(2);
+      //   expect(await base.connect(owner).totalSupply()).to.eq(2);
+      // })
 
     })
 
@@ -156,11 +156,11 @@ const { BigNumber } = require("ethers");
         await expect(base.connect(addr1).mintPublic(6)).to.revertedWith("Exceeded the personal limit");
       })
 
-      it("revert if out of personal mintLimit, by mint twice", async () => {
-        await base.setIsPublicSaleActive(true);
-        await base.connect(addr1).mintPublic(2, { value: price });
-        await expect(base.connect(addr1).mintPublic(4, { value: ethers.utils.parseEther("0.015") })).to.revertedWith("Exceeded the personal limit");
-      })
+      // it("revert if out of personal mintLimit, by mint twice", async () => {
+      //   await base.setIsPublicSaleActive(true);
+      //   await base.connect(addr1).mintPublic(2, { value: price });
+      //   await expect(base.connect(addr1).mintPublic(4, { value: ethers.utils.parseEther("0.015") })).to.revertedWith("Exceeded the personal limit");
+      // })
 
       it("check maxSupply mint limit, by devMint()", async () => {
         await base.connect(owner).devMint(3333)
@@ -203,6 +203,76 @@ const { BigNumber } = require("ethers");
       })
     })
 
+    describe("burn() function test", async()=>{
+      it("revert if not the nft owner", async()=>{
+        await base.connect(owner).devMint(1)
+        expect(await base.connect(owner).totalSupply()).to.eq(1);
+        await expect(base.connect(addr1).burnSeat(0)).to.revertedWith('TransferCallerNotOwnerNorApproved');
+      })
+
+      it("burnSeat() will really burn", async()=>{
+        await base.connect(owner).devMint(1)
+        expect(await base.connect(owner).totalSupply()).to.eq(1);
+        await(base.connect(owner).burnSeat(0));
+        expect(await base.totalSupply()).to.eq(0);
+        expect(await base.balanceOf(owner.address)).to.eq(0);
+        // expect(await base._numberBurned(owner.address)).to.eq(1);
+      })
+
+      it("revert burnSeat(), if nft is plege", async()=>{
+        // await base.connect(owner).setErc20("0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
+        // await base.connect(owner).devMint(1)
+        // expect(await base.connect(owner).totalSupply()).to.eq(1);
+        // await base.connect(addr1).pledgeTransferFromWithoutOwnerChange(addr1.address, '0x70997970C51812dc3A010C7d01b50e0d17dc79C8', 0, 1);
+        // await expect(base.connect(owner).burnSeat(0)).to.revertedWith("This NFT has already been pledged");
+        // await expect(base.connect(addr1).pledgeTransferFromWithoutOwnerChange(addr1.address, addr1.address, 0, 1)).to.revertedWith("This NFT has already been pledged");
+      })
+    })
+
+    describe("pledge() function test", async()=>{
+      it("revert if not the _token20 call the function", async()=>{
+        await base.connect(owner).setErc20("0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
+        await expect(base.connect(owner).pledgeTransferFromWithoutOwnerChange(owner.address, addr1.address, 0, 1)).to.revertedWith("You're not our contract");
+      })
+
+      it("check if prevOwnership.extraData be initialized to 0", async()=>{
+        await base.connect(owner).devMint(1)
+        // await expect()
+        await base.connect(owner).setErc20("0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
+        await expect(base.connect(addr1).pledgeTransferFromWithoutOwnerChange(addr1.address, owner.address, 0, 0)).to.revertedWith("This NFT hasn't been pledged");
+        // await expect(base.connect(addr1).pledgeTransferFromWithoutOwnerChange(owner.address, addr1.address, 0, 1)).to.revertedWith("This NFT has already been pledged");
+      })
+
+      // it("check if prevOwnership.extraData be initialized to 1 - part(2)", async()=>{
+      //   await base.connect(owner).devMint(1)
+      //   // await expect()
+      //   await base.connect(owner).setErc20("0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
+      //   await expect(base.connect(addr1).pledgeTransferFromWithoutOwnerChange(owner.address, addr1.address, 0, 1)).to.revertedWith("This NFT hasn't been pledged");
+      // })
+      
+      it("revert if from not owner when set pledge=true (be initialized to 0)", async()=>{
+        await base.connect(owner).devMint(1)
+        // await expect()
+        await base.connect(owner).setErc20("0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
+        await expect(base.connect(addr1).pledgeTransferFromWithoutOwnerChange(addr1.address, addr1.address, 0, 1)).to.revertedWith("This NFT is not yours");
+      })
+
+      it("pledge successful", async()=>{
+        await base.connect(owner).devMint(1)
+        await base.connect(owner).setErc20("0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
+        await base.connect(addr1).pledgeTransferFromWithoutOwnerChange(owner.address, addr1.address, 0, 1);
+        await expect(base.connect(addr1).pledgeTransferFromWithoutOwnerChange(owner.address, addr1.address, 0, 1)).to.revertedWith("This NFT has already been pledged");
+      })
+
+      it("revert if to not owner when set pledge=false", async()=>{
+        await base.connect(owner).devMint(1)
+        await base.connect(owner).setErc20("0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
+        await base.connect(addr1).pledgeTransferFromWithoutOwnerChange(owner.address, addr1.address, 0, 1);
+        await expect(base.connect(addr1).pledgeTransferFromWithoutOwnerChange(addr1.address, addr1.address, 0, 0)).to.revertedWith("This NFT is not yours");
+      })
+      
+    })
+
     describe("withdraw() function test", async()=>{
       it("before mint check 0 balance", async()=>{
         const contractBalance = await ethers.provider.getBalance(base.address);
@@ -242,18 +312,18 @@ const { BigNumber } = require("ethers");
     })
 
     describe("other settings function test", async()=>{
-      it("before blindbox open", async()=>{
-        await base.setIsPublicSaleActive(true);
-        await base.connect(addr1).mintPublic(1);
-        expect(await base.tokenURI(1)).to.eq('');
-      })
+      // it("before blindbox open", async()=>{
+      //   await base.setIsPublicSaleActive(true);
+      //   await base.connect(addr1).mintPublic(1);
+      //   expect(await base.tokenURI(1)).to.eq('');
+      // })
 
-      it("setBaseURI() function", async()=>{
-        await base.setIsPublicSaleActive(true);
-        await base.connect(addr1).mintPublic(1);
-        await base.connect(owner).setBaseURI("ipfs://openblind/");
-        expect( await base.tokenURI(1)).to.eq('ipfs://openblind/1');
-      })
+      // it("setBaseURI() function", async()=>{
+      //   await base.setIsPublicSaleActive(true);
+      //   await base.connect(addr1).mintPublic(1);
+      //   await base.connect(owner).setBaseURI("ipfs://openblind/");
+      //   expect( await base.tokenURI(1)).to.eq('ipfs://openblind/1');
+      // })
 
       it("setMintPrice() function", async()=>{
         await base.setIsPublicSaleActive(true);

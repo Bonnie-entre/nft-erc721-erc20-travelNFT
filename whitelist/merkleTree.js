@@ -34,7 +34,7 @@ const getRoot = async () => {
 
 
 getRoot()
-getProof_Leaf("0xCA35b7d915458EF540aDe6068dFe2F44E8fa733c")
+getProof_Leaf("0x03C6FcED478cBbC9a4FAB34eF9f40767739D1Ff7")
 
 
 // not leaf test addr = "0x4B20993Bc481177ec7E8f571ceCaE8A9e22C02db"
