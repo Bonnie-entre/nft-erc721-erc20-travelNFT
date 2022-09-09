@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.8;
 
-import "erc721a/contracts/ERC721A.sol";
+// import "erc721a/contracts/ERC721A.sol";
+import "./ERC721A.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
@@ -25,45 +26,81 @@ contract NFT is ERC721A, Ownable {
     bool public isWhiteSaleActive = false;
 
 
-    constructor() ERC721A("Travel seatBelt", "seatBelt") {}
+    constructor() ERC721A("Passenger", "Passenger") {}
 
+    /** 
+     * @dev use AUX to record whether mintGive & mintAllowList or not
+     * =0: no mintGive, no mintAllowList
+     * =1: no mintGive, mintAllowList
+     * =2: mintGive, mintAllowList
+     * =3: mintGive, no mintAllowList
+     * */ 
     function mintAllowList(bytes32[] memory proof, uint256 quantity) external payable {
         require(isWhiteSaleActive, "Allowlist mint is not active");
-        require(_numberMinted(msg.sender)==0, "You have already claimed your seats");
         require(isValid(proof, keccak256(abi.encodePacked(msg.sender))), "Not a part of Allowlist");
         require(quantity <= MAX_MINTS, "Exceeded the personal limit");
         require(totalSupply() + quantity <= MAX_SUPPLY, "Not enough Seatbelts left");
-        
+        uint64 _aux = _getAux(_msgSender());
+        require(_aux == 0 || _aux == 3, "You have already mint whitelist");
         if(quantity==5){
-            require(msg.value >= 0.015 ether, "Not enough ether sent");
+            require(msg.value >= 0.02 ether, "Not enough ether sent");
         }
         else{
-            require(msg.value >= (mintPrice * (quantity-1)), "Not enough ether sent");
+            require(msg.value >= (mintPrice * quantity), "Not enough ether sent");
         }
         
         _safeMint(msg.sender, quantity);
+
+        if(_aux==0){
+            _setAux(_msgSender(), 1);
+        }
+        else{
+            _setAux(_msgSender(), 2);
+        }
     }
 
     function mintPublic(uint256 quantity) external payable {
         require(isPublicSaleActive, "Public mint is not active");
-        require(_numberMinted(msg.sender)==0, "You have already claimed your seats");
         require(quantity <= MAX_MINTS, "Exceeded the personal limit");
         require(totalSupply() + quantity <= MAX_SUPPLY, "Not enough Seatbelts left");
 
         if(quantity==5){
-            require(msg.value >= (mintPrice * 3), "Not enough ether sent");
+            require(msg.value >= 0.02 ether, "Not enough ether sent");
         }
         else{
-            require(msg.value >= (mintPrice * (quantity-1)), "Not enough ether sent");
+            require(msg.value >= (mintPrice * quantity), "Not enough ether sent");
         }
 
         _safeMint(msg.sender, quantity);
     }
+    /**
+     * @dev can get one for free, if fill one other address can give 1 free token as present 
+     * if not, need to fill in 0x0000000000000000000000000000000000000000, then only caller can get one for free
+    */
+   //
+    function mintGive(address receiver) external {
+        require(isPublicSaleActive, "Public mint is not active");
+        require( receiver != _msgSender(), "You cannot fill in your own address");
+        uint64 _aux = _getAux(_msgSender());
+        require(_aux < 2, "You have already mint free give");
+        if ( receiver == address(0)){
+            require(totalSupply() + 1 <= MAX_SUPPLY, "Not enough Seatbelts left");
+        }
+        else{
+            require(totalSupply() + 2 <= MAX_SUPPLY, "Not enough Seatbelts left");
+            _safeMint(receiver, 1);
+        }
+        _safeMint(msg.sender, 1);
+
+        if(_aux==0){
+            _setAux(_msgSender(), 3);
+        }
+        else{
+            _setAux(_msgSender(), 2);
+        }
+    }
 
     function burnSeat(uint256 tokenId) external{
-        TokenOwnership memory prevOwnership = _ownershipAt(tokenId);
-        require(prevOwnership.extraData == 0, "This NFT has already been pledged");
-
         _burn(tokenId, true); // no approve function, but need to check if owner
     }
 
@@ -88,6 +125,8 @@ contract NFT is ERC721A, Ownable {
     * 
     * Requirements:
     * - only call by the address of erc20 contract which has set by setErc20() function
+    * 
+    * who heve token pledged, still can call function setApprovalForAll
     */
     function pledgeTransferFromWithoutOwnerChange(
         address from,
@@ -100,41 +139,13 @@ contract NFT is ERC721A, Ownable {
         TokenOwnership memory prevOwnership = _ownershipAt(tokenId);
         if (isPledged==0){
             require(prevOwnership.extraData == 1, "This NFT hasn't been pledged"); //extraData will be initialized to 1 when mint() & transferFrom() by erc721A
-            require(prevOwnership.addr == to, "This NFT is not yours");
+            require(prevOwnership.addr == to, "This NFT does not belong to this address");
         }
         else{
             require(prevOwnership.extraData == 0, "This NFT has already been pledged");  //extradata=0=pledged
             require(prevOwnership.addr == from, "This NFT is not yours");
         }
         
-        ////
-        /* 
-        * @dev 改讓其他會動用 nft 的 function 去檢查是否正在 pledge, ex. burn 
-        * ERC721A 的 approve() 會被強制檢查是否為 token owner 或是 aproveall者，因此不用 approve
-        * {Yolin} _approve(address(0), tokenId, prevOwnership.addr); //must
-        */
-
-       /*
-       * @dev approve(addr(0), tokenid ) 可以確實阻擋正在pledge的使用者呼叫 burn, approve, transfer 嗎??
-       * 1. in the pledge() in erc20, before call the pledgeTransferFromWithoutOwnerChange(), 
-       *    should　setApprovalForAll(erc20.address, true) to approve erc20 execute _approve() in this pledgeTransferFromWithoutOwnerChange() function
-       * 2. in the pledgeRetrieve() in erc20, after call the pledgeTransferFromWithoutOwnerChange(),
-       *    should setApprovalForAll(erc20.address, false) to protect users
-       * 
-       */
-      ////
-        
-        /* 
-        * @dev 不因 pledge 更動持有者(from 與 to)的數量 (要麻煩在 erc20 執行時注意有沒有需要自己記錄了~)
-        * ERC721A 的變數 _packedAddressData 設為 private，易無法透過改寫 transfer 來實現(限制 to ! addr(0))
-        * {Yolin} _addressData[from].balance -= 1;
-        * {Yolin} _addressData[to].balance += 1;
-        */
-
-        /*
-        * @dev 用 _setExtraDataAt() 來記錄 plege 與否
-        * {Yolin} _ownerships[tokenId].pledge = !_ownerships[tokenId].pledge; //important
-        */
         _setExtraDataAt(tokenId, isPledged);
     }
 
@@ -193,6 +204,10 @@ contract NFT is ERC721A, Ownable {
 
     function getNumOfBurned(address ownerAddr) public view returns(uint256){
         return _numberBurned(ownerAddr);
+    }
+
+    function getMintStatus() external view returns(uint64){
+        return _getAux(_msgSender());
     }
 
 }
