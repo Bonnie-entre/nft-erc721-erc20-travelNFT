@@ -15,7 +15,7 @@ contract NFT is ERC721A, Ownable {
     bytes32 public root;
 
     // Metadata, Uri
-    string public baseURI = "ipfs://QmTupSXieyjY9Sc9zCf4v7gmAHtnCWXrfyrt8XqzWrJhVE/";
+    string public baseURI = "ipfs://QmZCJBcoi552Qs3hHsbVYgxAHtP3JSpAEhTJ7BZVFTKF1u/";
 
     // ERC20 - Pledge
     address public _token20;
@@ -24,6 +24,7 @@ contract NFT is ERC721A, Ownable {
     // Market
     bool public isPublicSaleActive = false;
     bool public isWhiteSaleActive = false;
+    bool public isBlindboxOpen = false;
 
 
     constructor() ERC721A("Passenger", "Passenger") {}
@@ -78,8 +79,36 @@ contract NFT is ERC721A, Ownable {
      * if not, need to fill in 0x0000000000000000000000000000000000000000, then only caller can get one for free
     */
    //
-    function mintGive(address receiver) external {
+    function mintGivePublic(address receiver) external {
         require(isPublicSaleActive, "Public mint is not active");
+        require( receiver != _msgSender(), "You cannot fill in your own address");
+        uint64 _aux = _getAux(_msgSender());
+        require(_aux < 2, "You have already mint free give");
+        if ( receiver == address(0)){
+            require(totalSupply() + 1 <= MAX_SUPPLY, "Not enough Seatbelts left");
+        }
+        else{
+            require(totalSupply() + 2 <= MAX_SUPPLY, "Not enough Seatbelts left");
+            _safeMint(receiver, 1);
+        }
+        _safeMint(msg.sender, 1);
+
+        if(_aux==0){
+            _setAux(_msgSender(), 3);
+        }
+        else{
+            _setAux(_msgSender(), 2);
+        }
+    }
+    
+    /**
+     * @dev can get one for free, if fill one other address can give 1 free token as present 
+     * if not, need to fill in 0x0000000000000000000000000000000000000000, then only caller can get one for free
+    */
+   //
+    function mintGiveWhitelist(address receiver, bytes32[] memory proof) external {
+        require(isWhiteSaleActive, "Allowlist mint is not active");
+        require(isValid(proof, keccak256(abi.encodePacked(msg.sender))), "Not a part of Allowlist");
         require( receiver != _msgSender(), "You cannot fill in your own address");
         uint64 _aux = _getAux(_msgSender());
         require(_aux < 2, "You have already mint free give");
@@ -106,6 +135,15 @@ contract NFT is ERC721A, Ownable {
 
     function isValid(bytes32[] memory proof, bytes32 leaf) public view returns (bool) {
         return MerkleProof.verify(proof, root, leaf);
+    }
+
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
+        if (!_exists(tokenId)) revert URIQueryForNonexistentToken();
+
+        string memory baseURI = _baseURI();
+        return isBlindboxOpen
+                ?  string(abi.encodePacked(baseURI, _toString(tokenId), ".json")) 
+                : string(abi.encodePacked(baseURI));
     }
 
     /**
@@ -182,8 +220,9 @@ contract NFT is ERC721A, Ownable {
         return baseURI;
     }
 
-    function setBaseURI(string memory _seatURI) external onlyOwner {
+    function setBaseURI(string memory _seatURI, bool _state) external onlyOwner {
         baseURI = _seatURI;
+        isBlindboxOpen = _state;
     }
     
     function setIsWhiteSaleActive(bool _newState) external onlyOwner {
