@@ -1,16 +1,30 @@
 # NFT - Travel Ticket
+This the blockchain project that sold 3K+ NFTs in 4 hours on Ethereum using JavaScript and Solidity.
+[OPENSEA SeatBelt On!](https://opensea.io/zh-TW/collection/seatbelt-on)
+<br>
 
 ![Screenshot](screenshot.png)
 on testnet rinkeby: https://rinkeby.etherscan.io/address/0xf49a30a3205E9E1f1AC748481f26BAeD344Fb3A9
 
-<br>
-*once install packga "hardhat-shorthand", we can replace "hardhat" in cml by "hh"*
+<br><br>
 
-<br>
 
 ## Usage
 
 use package hardhat...
+
+*once install packga "hardhat-shorthand", we can replace "hardhat" in cml by "hh"*
+
+<br><br>
+
+
+## Start the project..
+
+1. `yarn install`
+2. set your .env file
+3.  check the network settings in `hardhat.config.js`
+
+<br>
 
 ### Deploy the Contract
 
